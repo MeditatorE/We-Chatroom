@@ -13,7 +13,7 @@ user = ''
 listbox1 = ''  # 用于显示在线用户的列表框
 ii = 0  # 用于判断是开还是关闭列表框
 users = []  # 在线用户列表
-chat = 'Group member：'  # 聊天对象, 默认为群聊
+chat = 'Group member:'  # 聊天对象, 默认为群聊
 # 登陆窗口
 root1 = tkinter.Tk()
 root1.title('Log in')
@@ -252,106 +252,104 @@ def fileClient():
             else:
                 list2.itemconfig(tkinter.END, fg='blue')
 
-# 创建标签显示服务端工作目录
-def lab():
-    global label
-    data = s.recv(1024)  # 接收目录
-    lu = data.decode()
-    try:
-        label.destroy()
-        label = tkinter.Label(root, text=lu)
-        label.place(x=580, y=0, )
-    except:
-        label = tkinter.Label(root, text=lu)
-        label.place(x=580, y=0, )
-    recvList('dir', lu)
+    # 创建标签显示服务端工作目录
+    def lab():
+        global label
+        data = s.recv(1024)  # 接收目录
+        lu = data.decode()
+        try:
+            label.destroy()
+            label = tkinter.Label(root, text=lu)
+            label.place(x=580, y=0, )
+        except:
+            label = tkinter.Label(root, text=lu)
+            label.place(x=580, y=0, )
+        recvList('dir', lu)
 
-# 进入指定目录(cd)
-def cd(message):
-    s.send(message.encode())
-
-# 刚连接上服务端时进行一次面板刷新
-cd('cd same')
-lab()
-
-# 接收下载文件(get)
-def get(message):
-    # print(message)
-    name = message.split(' ')
-    # print(name)
-    name = name[1]  # 获取命令的第二个参数(文件名)
-    # 选择对话框, 选择文件的保存路径
-    fileName = tkinter.filedialog.asksaveasfilename(title='Save file to', initialfile=name)
-    # 如果文件名非空才进行下载
-    if fileName:
+    # 进入指定目录(cd)
+    def cd(message):
         s.send(message.encode())
-        with open(fileName, 'wb') as f:
-            while True:
-                data = s.recv(1024)
-                if data == 'EOF'.encode():
-                    tkinter.messagebox.showinfo(title='Message',
-                                                message='Download completed!')
-                    break
-                f.write(data)
 
-# 创建用于绑定在列表框上的函数
-def run(*args):
-    indexs = list2.curselection()
-    index = indexs[0]
-    content = list2.get(index)
-    # 如果有一个 . 则为文件
-    if '.' in content:
-        content = 'get ' + content
-        get(content)
-        cd('cd same')
-    elif content == 'Return to the previous dir':
-        content = 'cd ..'
-        cd(content)
-    else:
-        content = 'cd ' + content
-        cd(content)
-    lab()  # 刷新显示页面
-
-# 在列表框上设置绑定事件
-list2.bind('<ButtonRelease-1>', run)
-
-# 上传客户端所在文件夹中指定的文件到服务端, 在函数中获取文件名, 不用传参数
-def put():
-    # 选择对话框
-    fileName = tkinter.filedialog.askopenfilename(title='Select upload file')
-    # 如果有选择文件才继续执行
-    if fileName:
-        name = fileName.split('/')[-1]
-        message = 'put ' + name
-        s.send(message.encode())
-        with open(fileName, 'rb') as f:
-            while True:
-                a = f.read(1024)
-                if not a:
-                    break
-                s.send(a)
-            time.sleep(0.1)  # 延时确保文件发送完整
-            s.send('EOF'.encode())
-            tkinter.messagebox.showinfo(title='Message',
-                                        message='Upload completed!')
+    # 刚连接上服务端时进行一次面板刷新
     cd('cd same')
-    lab()  # 上传成功后刷新显示页面
+    lab()
 
-# 创建上传按钮, 并绑定上传文件功能
-upload = tkinter.Button(root, text='Upload file', command=put)
-upload.place(x=590, y=405, height=30, width=75)
+    # 接收下载文件(get)
+    def get(message):
+        name = message.split(' ')
+        name = name[1]  # 获取命令的第二个参数(文件名)
+        # 选择对话框, 选择文件的保存路径
+        fileName = tkinter.filedialog.asksaveasfilename(title='Save file to', initialfile=name)
+        # 如果文件名非空才进行下载
+        if fileName:
+            s.send(message.encode())
+            with open(fileName, 'wb') as f:
+                while True:
+                    data = s.recv(1024)
+                    if data == 'EOF'.encode():
+                        tkinter.messagebox.showinfo(title='Message',
+                                                    message='Download completed!')
+                        break
+                    f.write(data)
 
-# 关闭文件管理器
-def closeFile():
-    root['height'] = 440
-    root['width'] = 580
-    # 关闭连接
-    s.send('quit'.encode())
-    s.close()
+    # 创建用于绑定在列表框上的函数
+    def run(*args):
+        indexs = list2.curselection()
+        index = indexs[0]
+        content = list2.get(index)
+        # 如果有一个 . 则为文件
+        if '.' in content:
+            content = 'get ' + content
+            get(content)
+            cd('cd same')
+        elif content == 'Return to the previous dir':
+            content = 'cd ..'
+            cd(content)
+        else:
+            content = 'cd ' + content
+            cd(content)
+        lab()  # 刷新显示页面
 
-# 创建关闭按钮
-close = tkinter.Button(root, text='Close', command=closeFile)
-close.place(x=675, y=405, height=30, width=70)
+    # 在列表框上设置绑定事件
+    list2.bind('<ButtonRelease-1>', run)
+
+    # 上传客户端所在文件夹中指定的文件到服务端, 在函数中获取文件名, 不用传参数
+    def put():
+        # 选择对话框
+        fileName = tkinter.filedialog.askopenfilename(title='Select upload file')
+        # 如果有选择文件才继续执行
+        if fileName:
+            name = fileName.split('/')[-1]
+            message = 'put ' + name
+            s.send(message.encode())
+            with open(fileName, 'rb') as f:
+                while True:
+                    a = f.read(1024)
+                    if not a:
+                        break
+                    s.send(a)
+                time.sleep(0.1)  # 延时确保文件发送完整
+                s.send('EOF'.encode())
+                tkinter.messagebox.showinfo(title='Message',
+                                            message='Upload completed!')
+        cd('cd same')
+        lab()  # 上传成功后刷新显示页面
+
+    # 创建上传按钮, 并绑定上传文件功能
+    upload = tkinter.Button(root, text='Upload file', command=put)
+    upload.place(x=590, y=405, height=30, width=75)
+
+    # 关闭文件管理器
+    def closeFile():
+        root['height'] = 440
+        root['width'] = 580
+        # 关闭连接
+        s.send('quit'.encode())
+        s.close()
+
+    # 创建关闭按钮
+    close = tkinter.Button(root, text='Close', command=closeFile)
+    close.place(x=675, y=405, height=30, width=70)
 
 
 # 创建文件按钮
@@ -386,7 +384,7 @@ entry.place(x=5, y=335, width=570, height=70)
 
 def send(*args):
     # 没有添加的话发送信息时会提示没有聊天对象
-    users.append('Group member：')
+    users.append('Group member:')
     print(chat)
     if chat not in users:
         tkinter.messagebox.showerror('Send error', message='There is nobody to talk to!')
@@ -415,7 +413,7 @@ def private(*args):
     if index > 0:
         chat = listbox1.get(index)
         # 修改客户端名称
-        if chat == 'Group member：':
+        if chat == 'Group member:':
             root.title(user)
             return
         ti = user + '  -->  ' + chat
@@ -440,7 +438,7 @@ def recv():
             number = ('  Online User: ' + str(len(data)))
             listbox1.insert(tkinter.END, number)
             listbox1.itemconfig(tkinter.END, fg='red', bg="#f0f0ff")
-            listbox1.insert(tkinter.END, 'Group member：')
+            listbox1.insert(tkinter.END, 'Group member:')
             listbox1.itemconfig(tkinter.END, fg='purple')
             for i in range(len(data)):
                 listbox1.insert(tkinter.END, (data[i]))
@@ -460,7 +458,7 @@ def recv():
             # 如果字典里有则贴图
             if (markk in dic) or pic[0] == '``':
                 data4 = '\n' + data2 + '：'  # 例:名字-> \n名字：
-                if data3 == 'Group member：':
+                if data3 == 'Group member:':
                     if data2 == user:  # 如果是自己则将则字体变为蓝色
                         listbox.insert(tkinter.END, data4, 'blue')
                     else:
@@ -472,7 +470,7 @@ def recv():
                 listbox.image_create(tkinter.END, image=dic[markk])
             else:
                 data1 = '\n' + data1
-                if data3 == 'Group member：':
+                if data3 == 'Group member:':
                     if data2 == user:  # 如果是自己则将则字体变为蓝色
                         listbox.insert(tkinter.END, data1, 'blue')
                     else:
